@@ -1,0 +1,10 @@
+{
+  "name": "couchbase-init",
+  "version": "1.0.0",
+  "description": "Couchbase initialization script dependencies",
+  "private": true,
+  "dependencies": {
+    "couchbase": "^4.4.1",
+    "bcrypt": "^6.0.0"
+  }
+}

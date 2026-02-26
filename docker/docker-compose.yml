@@ -1,0 +1,62 @@
+services:
+  couchbase:
+    image: couchbase:community-7.6.2
+    ports:
+      - "8091-8096:8091-8096"
+      - "9123:9123"
+      - "11210-11211:11210-11211"
+    environment:
+      COUCHBASE_ADMINISTRATOR_USERNAME: Administrator
+      COUCHBASE_ADMINISTRATOR_PASSWORD: password123
+    volumes:
+      - couchbase_data:/opt/couchbase/var
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8091/ui/index.html"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+      target: production
+    ports: ["3000:3000"]
+    env_file: ../backend/.env.development
+    environment:
+      NODE_ENV: development
+      COUCHBASE_CONNECTION_STRING: couchbase://couchbase
+      REDIS_HOST: redis
+      LOG_LEVEL: debug
+      CORS_ORIGIN: http://106.52.167.143
+    depends_on:
+      couchbase:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../frontend
+      target: production
+      args:
+        VITE_API_BASE_URL: http://106.52.167.143
+        VITE_GRAPHQL_URL: http://106.52.167.143/graphql
+    ports: ["80:80"]
+    depends_on: [backend]
+
+volumes:
+  couchbase_data:
+  redis_data:
